@@ -3,33 +3,28 @@
 #+    Enables management via the init script.
 #+    Distributes requests using a round-robin algorithm.
 
-apt-get install -y software-properties-common
-add-apt-repository -y ppa:vbernat/haproxy-1.8
-apt-get update
-apt-get install -y haproxy=1.8.\*
+#apt-get install -y software-properties-common
+#add-apt-repository -y ppa:vbernat/haproxy-1.8
+apt update
+apt install haproxy
+#apt-get install -y haproxy=1.8.\*
 
-echo "ENABLED=1" >> /etc/default/haproxy
-mv /etc/haproxy/haproxy.cfg{,.original}
-touch /etc/haproxy/haproxy.cfg
+#echo "ENABLED=1" >> /etc/default/haproxy
 
-printf %s "global
-    log 127.0.0.1 local0 notice
-    maxconn 2000
-    user haproxy
-    group haproxy
+cp /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.original
+#touch /etc/haproxy/haproxy.cfg
+add_conf=\
+"
+frontend my_frontend
+    bind *:80
+    default_backend my_servers
 
-defaults
-    log     global
-    mode    http
-    option  httplog
-    option  dontlognull
-    retries 3
-    option redispatch
-    timeout connect  5000
-    timeout client  10000
-    timeout server  10000
-
-listen hbnb
+backend my_servers
+    balance roundrobin
+    server 5779-web-01 54.224.104.78:80 check
+    server 5779-web-02 54.90.107.216:80 check
+"
+listen  hbnb
     bind 0.0.0.0:80
     mode http
     stats enable
@@ -39,6 +34,7 @@ listen hbnb
     option forwardfor
     server 5779-web-01 54.147.175.242:80 check
     server 5779-web-02 54.242.59.215:80 check
-" >> /etc/haproxy/haproxy.cfg
+"
+echo $add_conf >> /etc/haproxy/haproxy.cfg
 
-service haproxy start
+service haproxy restart
